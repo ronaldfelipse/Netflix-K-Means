@@ -1,6 +1,6 @@
 import zmq
 import json
-import scipy.spatial.distance 
+import math
 
 def Strencode(strToEncode):
     return str(strToEncode).encode("utf-8")
@@ -8,62 +8,90 @@ def Strencode(strToEncode):
 def Bdecode(bToEncode):
     return bToEncode.decode("utf-8")
 
-def getPoint(Point,CantMovies):
+def getPoint(Point):
     
-    BaseVector = []
-    for i in range(CantMovies):
-            BaseVector.append(0)
+    FileToOpen =     "DataSet/"+str(Point)+".txt"
+    
+    f = open(FileToOpen, "r")
+    Iduser = f.readline()
+    Datos = f.readline().split("|")
+    
+    Point = {}
+    
+    for Dato in Datos:
+        datosTemp = Dato.split(",")
+        Point[datosTemp[0]] = datosTemp[1]
     
     
-    f = open("DataSet/Datos.txt", "r")
-    n=0
-    for linea in f:
-        n+=1    
-        if  n == Point:
-            Datos = linea.split("|")
-           
-            Datos.remove(Datos[0])
-           
-            for i in range(len(Datos)):
-                Value = Datos[i].split(",")
-                BaseVector[int(Value[0])] = int(Value[1])
-        break
     f.close()
-    return BaseVector
+    return Point
             
 
 def CalculateDist(dataSetI,dataSetII):
     
-    return  scipy.spatial.distance.cosine(dataSetI, dataSetII)
+    sum_AB = 0
+    sum_powA = 0 
+    sum_powB = 0 
+            
+    for k in dataSetI.keys():
+    		sum_AB += int(dataSetI[k])*int(dataSetII.get(k,0))
+    		sum_powA += int(dataSetI[k])**2
+    
+    for k in dataSetII.keys():
+    	sum_powB += int(dataSetII[k])**2
+        
+    if sum_powA == 0 or sum_powB == 0:
+        print(dataSetI)
+        print(dataSetII)
+    
+    return 1 - (sum_AB / (math.sqrt(sum_powA)*math.sqrt(sum_powB)))
+  
     
 
-def CalculateCentroide(Point,Centroids,CantMovies,dicc):
+def CalculateCentroide(Point,Centroids,dicc,tipo):
     
     DistMenor = 0
     CentroID = 0
    
-    dataSetI = getPoint(Point,CantMovies)
+    dataSetI = getPoint(Point)
     
     for i in range(len(Centroids)):
         if i == 0 :
-             DistMenor = CalculateDist(dataSetI,Centroids[i])
+             DistMenor = CalculateDist(Centroids[i],dataSetI)
         else:
-             DistTemp = CalculateDist(dataSetI,Centroids[i])
+             DistTemp = CalculateDist(Centroids[i],dataSetI)
              if DistTemp < DistMenor :
                  CentroID = i
                  DistMenor = DistTemp
-            
-    dicc[CentroID]["Cant"] = dicc[CentroID]["Cant"] + 1
-    dicc[CentroID]["Sumatoria"] = SumVect(dicc[CentroID]["Sumatoria"],dataSetI)
-         
-def SumVect(Vect1,Vect2):
-    
-    VecTSum = []
-    
-    for i in range(len(Vect1)):
-        Val = Vect1[i] + Vect2[i]
-        VecTSum.append(Val)
+                 
+    if tipo == 0:
         
+        dicc[CentroID]["Cant"] = dicc[CentroID]["Cant"] + 1
+        dicc[CentroID]["Sumatoria"] = SumDataSet(dicc[CentroID]["Sumatoria"],dataSetI)
+         
+    else:
+        
+        temp = dicc[CentroID]
+        temp.append(Point)
+        dicc[CentroID] = temp
+        
+        
+def SumDataSet(Vect1,Vect2):
+    
+    VecTSum = {}
+    
+    for k in Vect1.keys():
+        if k in VecTSum:
+            VecTSum[k] = int(VecTSum[k]) + int(Vect1[k])
+        else:
+            VecTSum[k] = int(Vect1[k])
+    
+    for j in Vect2.keys():
+        if j in VecTSum:
+            VecTSum[j] = int(VecTSum[j]) + int(Vect2[j])
+        else:
+            VecTSum[j] = int(Vect2[j])
+
     return VecTSum
 
 def Main():
@@ -85,24 +113,29 @@ def Main():
         Fin = Bdecode(s[1])
         Centrois = Bdecode(s[2])
         WorkId = Bdecode(s[3])
+        tipo = Bdecode(s[4])
         
         print("Procesing work : "+WorkId)
         
         Centrois = json.loads(Centrois)
         
         dicc = {}
+
+        if int(tipo) == 0 :
+    
+            for j in range(len(Centrois)):
+                dicc[j] = {}
+                dicc[j]["Sumatoria"] = {}
+                dicc[j]["Cant"] = 0
+                 
+        else :
+            
+            for j in range(len(Centrois)):
+                dicc[j] = []
+            
         
-        BaseVector = []
-        for i in range(len(Centrois[0])):
-            BaseVector.append(0)
-            
-        for j in range(len(Centrois)):
-            dicc[j] = {}
-            dicc[j]["Sumatoria"] = BaseVector
-            dicc[j]["Cant"] = 0
-            
         for k in range(int(Fin)-int(Init)+1):
-            CalculateCentroide(k+1,Centrois,len(Centrois[0]),dicc)
+           CalculateCentroide(k+int(Init),Centrois,dicc,int(tipo))
             
 
         # Send results to sink

@@ -9,12 +9,20 @@ def Bdecode(bToEncode):
 
 def SumVect(Vect1,Vect2):
     
-    VecTSum = []
+    VecTSum = {}
     
-    for i in range(len(Vect1)):
-        Val = Vect1[i] + Vect2[i]
-        VecTSum.append(Val)
-        
+    for k in Vect1.keys():
+        if k in VecTSum:
+            VecTSum[k] = int(VecTSum[k]) + int(Vect1[k])
+        else:
+            VecTSum[k] = int(Vect1[k])
+    
+    for j in Vect2.keys():
+        if j in VecTSum:
+            VecTSum[j] = int(VecTSum[j]) + int(Vect2[j])
+        else:
+            VecTSum[j] = int(Vect2[j])
+
     return VecTSum
 
 context = zmq.Context()
@@ -35,53 +43,84 @@ print("Points : "+Points)
 
 while True:
     
-    centroids = fanRecive.recv_multipart()
-    centroids = json.loads(Bdecode(centroids[0]))
-    print("-----------------------")
-    print("NewIte")
-
+    Data = fanRecive.recv_multipart()
+    typeWork = Bdecode(Data[0])
+    centroids = json.loads(Bdecode(Data[1]))
     
-    PointsProcesed = 0
-    dicc = {}
-    BaseVector = []
-    
-    for i in range(len(centroids[0])):
-        BaseVector.append(0)
+    if int(typeWork) == 0 :
         
-    for j in range(len(centroids)):
-        dicc[j] = {}
-        dicc[j]["Sumatoria"] = BaseVector
-        dicc[j]["Cant"] = 0
-    
-    while PointsProcesed < int(Points):
         
-            dataWork = Workers.recv_multipart()
-            dataWork = json.loads(Bdecode(dataWork[0]))
-            for z in range(len(centroids)):
+        print("-----------------------")
+        print("New Iteration")
+    
+        
+        PointsProcesed = 0
+        dicc = {}
+        BaseVector = []
+       
             
-                dicc[z]["Cant"] = dicc[z]["Cant"]  + dataWork[str(z)]["Cant"]
-                PointsProcesed = PointsProcesed + dataWork[str(z)]["Cant"]
-                dicc[z]["Sumatoria"] = SumVect(dicc[z]["Sumatoria"],dataWork[str(z)]["Sumatoria"])
-    
-    
-    
-    NewCentroids = []
-    
-    for k in range(len(centroids)):
+        for j in range(len(centroids)):
+            dicc[j] = {}
+            dicc[j]["Sumatoria"] = {}
+            dicc[j]["Cant"] = 0
         
-        NewValCentro = []
-        
-        for M in range(len(dicc[k]["Sumatoria"])):
-            ValTemp = dicc[k]["Sumatoria"][M]
-            ValTemp = ValTemp / dicc[k]["Cant"]
-            NewValCentro.append(ValTemp)
+        while PointsProcesed < int(Points):
             
-        NewCentroids.append(NewValCentro)
-     
-    print("-----------------------")
-    
-    fanSend.send_multipart([Strencode(json.dumps(NewCentroids))])
-               
+                dataWork = Workers.recv_multipart()
+                dataWork = json.loads(Bdecode(dataWork[0]))
+                for z in range(len(centroids)):
+                
+                    dicc[z]["Cant"] = dicc[z]["Cant"]  + dataWork[str(z)]["Cant"]
+                    PointsProcesed = PointsProcesed + dataWork[str(z)]["Cant"]
+                    dicc[z]["Sumatoria"] = SumVect(dicc[z]["Sumatoria"],dataWork[str(z)]["Sumatoria"])
+        
+        
+        
+        NewCentroids = []
+ 
+        for k in range(len(centroids)):
+            
+            NewValCentro = {}
+            
+            for j in  dicc[k]["Sumatoria"].keys() :
+                ValTemp = int(dicc[k]["Sumatoria"][j])
+                ValTemp = ValTemp / int(dicc[k]["Cant"])
+                ValTemp = int(ValTemp)
+                if ValTemp != 0 :
+                    NewValCentro[j] = ValTemp
+                
+            NewCentroids.append(NewValCentro)
+         
+        print("-----------------------")
+        
+        fanSend.send_multipart([Strencode(json.dumps(NewCentroids))])
+        
+    else : 
+        
+         dicc = {}
+         
+         for j in range(len(centroids)):
+                dicc[j] = []
+                
+         PointsProcesed = 0
+                
+         while PointsProcesed < int(Points):
+                dataWork = Workers.recv_multipart()
+                dataWork = json.loads(Bdecode(dataWork[0]))
+       
+                for z in range(len(centroids)):
+                    PointsProcesed += len(dataWork[str(z)])
+                    for x in range( len(dataWork[str(z)] )):
+                   
+                        dicc[z].append(dataWork[str(z)][x])
+          
+         #print(dicc)
+                
+         for z in range(len(centroids)):
+                print("************")
+                print("Centroid: "+str(z))
+                print("PointCant: "+str(len(dicc[z])))
+                print("************")
         
 
     
