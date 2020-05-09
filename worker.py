@@ -71,9 +71,13 @@ def CalculateCentroide(Point,Centroids,dicc,tipo):
          
     else:
         
-        temp = dicc[CentroID]
+        temp = dicc[CentroID]["Points"]
         temp.append(Point)
-        dicc[CentroID] = temp
+        dicc[CentroID]["Points"] = temp
+        
+        temp = dicc[CentroID]["SumDist"]
+        temp = temp + float(DistMenor) ** 2
+        dicc[CentroID]["SumDist"] = temp
         
         
 def SumDataSet(Vect1,Vect2):
@@ -131,11 +135,17 @@ def Main():
         else :
             
             for j in range(len(Centrois)):
-                dicc[j] = []
+                dicc[j] = {}
+                dicc[j]["Points"] = []
+                dicc[j]["SumDist"] = 0
             
         
         for k in range(int(Fin)-int(Init)+1):
-           CalculateCentroide(k+int(Init),Centrois,dicc,int(tipo))
+           Pos = k+int(Init)
+           if Pos < 470759 :
+               CalculateCentroide(Pos,Centrois,dicc,int(tipo))
+           else : 
+               break
             
 
         # Send results to sink

@@ -98,6 +98,7 @@ while True:
     else : 
         
          dicc = {}
+         Inerence = 0
          
          for j in range(len(centroids)):
                 dicc[j] = []
@@ -109,12 +110,17 @@ while True:
                 dataWork = json.loads(Bdecode(dataWork[0]))
        
                 for z in range(len(centroids)):
-                    PointsProcesed += len(dataWork[str(z)])
-                    for x in range( len(dataWork[str(z)] )):
+                    PointsProcesed += len(dataWork[str(z)]["Points"])
+                    
+                    Inerence = Inerence + float(dataWork[str(z)]["SumDist"])
+                    
+                    for x in range( len(dataWork[str(z)]["Points"] )):
                    
-                        dicc[z].append(dataWork[str(z)][x])
+                        dicc[z].append(dataWork[str(z)]["Points"][x])
           
          #print(dicc)
+                        
+         print("Inerence : "+str(Inerence))
                 
          for z in range(len(centroids)):
                 print("************")

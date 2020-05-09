@@ -9,6 +9,20 @@ def Strencode(strToEncode):
 def Bdecode(bToEncode):
     return bToEncode.decode("utf-8")
 
+def generateCentroid(Dimensiones):
+           
+         Centroidetemp = {}
+         
+         NumTemp =  random.randint(1,100)
+        
+         for i in range(NumTemp):
+
+            movieID = random.randint(1,Dimensiones)
+            Atribute = random.randint(1,5)
+            
+            Centroidetemp[movieID] = Atribute
+            
+         return Centroidetemp
 
 def Createcentroides(K,Dimensiones):
     
@@ -16,23 +30,14 @@ def Createcentroides(K,Dimensiones):
     
     for i in range(K):
         
-         Centroidetemp = {}
-         
-         NumTemp =  random.randint(1,Dimensiones)
-        
-         for i in range(NumTemp):
-
-            Atribute = random.randint(1,5)
-            
-            Centroidetemp[i] = Atribute
-         Centroides.append(Centroidetemp)
+         Centroides.append(generateCentroid(Dimensiones))
         
     return Centroides
 
 def SendsPoints(workers,NumPoints,Centroides,tipo):
     
     Pointer = 1
-    TamPoints = 100 ####
+    TamPoints = 500 ####
     workCount = 1
 
     
@@ -98,7 +103,7 @@ def Main():
     _ = input()
     print("sending tasks to workers")
     
-    NumPoints = 470758
+    NumPoints =  470758
     
     sinkSend.send_multipart([Strencode(NumPoints)])
     
@@ -110,6 +115,10 @@ def Main():
         SendsPoints(workers,NumPoints,Centroides,0)    
         Newcentroids = sinkRecive.recv_multipart()
         Newcentroids = json.loads(Bdecode(Newcentroids[0]))
+        
+        for j in range(len(Newcentroids)):
+                if len(Newcentroids[j]) == 0 :
+                    Newcentroids[j] = generateCentroid()
         
         if Evaluatemovement(Centroides,Newcentroids):
             Centroides = Newcentroids
