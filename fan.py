@@ -126,7 +126,7 @@ def Main():
         if Evaluatemovement(Centroides,Newcentroids):
             Centroides = Newcentroids
 
-	    if Count == 100:
+	    if Count == 10:
 		 
           	sinkSend.send_multipart([b'1',Strencode(json.dumps(Centroides))])
             	SendsPoints(workers,NumPoints,Centroides,1) 
