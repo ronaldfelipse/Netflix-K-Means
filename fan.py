@@ -108,6 +108,8 @@ def Main():
     sinkSend.send_multipart([Strencode(NumPoints)])
     
     EndsKmeans = False
+
+    Count = 0
     
     while not EndsKmeans:
         
@@ -119,9 +121,20 @@ def Main():
         for j in range(len(Newcentroids)):
                 if len(Newcentroids[j]) == 0 :
                     Newcentroids[j] = generateCentroid()
+        Count = Count  + 1
         
         if Evaluatemovement(Centroides,Newcentroids):
             Centroides = Newcentroids
+
+	    if Count == 100:
+		 
+          	sinkSend.send_multipart([b'1',Strencode(json.dumps(Centroides))])
+            	SendsPoints(workers,NumPoints,Centroides,1) 
+            
+            	print("K-MeansEnd")
+            	EndsKmeans = True
+
+
         else:
             Centroides = Newcentroids
             sinkSend.send_multipart([b'1',Strencode(json.dumps(Centroides))])
